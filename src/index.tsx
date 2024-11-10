@@ -4,7 +4,7 @@ import { render, Show } from "solid-js/web";
 import "./index.css";
 import { Route, Router, useSearchParams } from "@solidjs/router";
 import { Accessor, Component, createMemo, createResource, For } from "solid-js";
-import { isEmpty, uniqBy } from "ramda";
+import { isEmpty, uniq } from "ramda";
 
 const root = document.getElementById("root");
 
@@ -22,7 +22,7 @@ render(
 
           const [searchParams, setSearchParams] = useSearchParams();
 
-          const domain = createMemo(() => String(searchParams["domain"]) as string);
+          const domain = createMemo(() => String(searchParams["domain"] ?? "") as string);
 
           const Resolver: Component<{ domain: Accessor<string> }> = ({ domain }) => {
             const types = ["A", "AAAA", "CNAME", "TXT"] as const;
@@ -52,8 +52,11 @@ render(
                     });
                     const json = await response.json();
                     const answers: { name: string; type: number; data: string }[] = json.Answer || [];
-                    res[type].push(...answers.filter(({ type: _type }) => type === typeMap[_type]));
-                    res[type] = uniqBy(String, res[type]);
+
+                    console.log(answers);
+
+                    res[type] = answers.filter(({ type: _type }) => type === typeMap[_type]);
+                    res[type] = uniq(res[type]);
                     res[type].sort();
                   } catch (err) {
                     error += "\n" + err;
@@ -119,9 +122,11 @@ render(
                     "font-family": "monospace",
                   }}></input>
               </form>
-              <Show when={domain()}>
+              <Show
+                when={domain()}
+                fallback={<h1>↑ Enter Domain</h1>}>
                 <div>
-                  <h1>{domain()}</h1>
+                  <h1>→ {domain()}</h1>
                   <Resolver domain={domain}></Resolver>
                 </div>
               </Show>
